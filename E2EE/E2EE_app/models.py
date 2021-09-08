@@ -16,3 +16,8 @@ class Public_Key(models.Model):
     public_key = models.CharField(max_length= 450)
 
 
+class Data_Store(models.Model):
+    user_key = models.CharField(max_length= 450)
+    data = models.BinaryField()
+
+

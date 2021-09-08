@@ -7,11 +7,9 @@ import argon2
 from Crypto.Util.Padding import pad, unpad
 from cprint import cprint
 from django.shortcuts import render
-
-from E2EE.E2EE_app.models import *
-
+from E2EE_app.models import *
 RSA_KEY_SIZE_BITS = 2048
-HASH_SIZE_BYTES = hashlib.sha512.Size
+# HASH_SIZE_BYTES = hashlib.sha512.Size
 
 
 def signup(req):
@@ -34,10 +32,6 @@ def get_argon_key(password: str, salt: str, argon_hash_len: int) -> bytes:
     )
 
 
-def get_uuid(password_argon_hash, username):
-    return uuid.UUID(hmac.new(password_argon_hash, username, hashlib.sha256))
-
-
 def sym_enc(enc_key: bytes, iv: bytes, to_enc_json: json) -> json:
     to_enc_bytes = b64encode(to_enc_json)
 
@@ -49,9 +43,8 @@ def sym_enc(enc_key: bytes, iv: bytes, to_enc_json: json) -> json:
     return json.dumps({'iv': cipher.iv, "cipher_text": cipher_text})
 
 
-
-
-def
+def get_hmac(hmac_key: bytes, data_to_hash: bytes) -> bytes:
+    return hmac.new(hmac_key, data_to_hash, hashlib.sha256)
 
 
 def get_random_bytes(num_bytes: int) -> bytes:
@@ -84,14 +77,6 @@ def init_user(username, password):
 
     user_class_json = json.dumps(user.__dict__)
     cipher_json = sym_enc(user.enc_key, get_random_bytes(AES.block_size), user_class_json)
+    cipher_hmac = get_hmac(user.hmac_key, user_class_json.encode('ascii'))
 
-
-
-def process_signup(req):
-    if req.method == 'POST':
-        user = req.POST.get("username")
-        password = req.POST.get("password")
-        if user and password:
-            argon_hash_len = 32
-            password_argon_hash = get_argon_key(password, user, argon_hash_len)
-            uuid = get_uuid(password_argon_hash, user)
+    encrypted_hmac_user_cipher_bytearray = bytearray(cipher_json.encode('ascii')).append(cipher_hmac)
