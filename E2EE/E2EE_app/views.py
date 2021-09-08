@@ -7,15 +7,15 @@ from django.shortcuts import render
 
 from E2EE.E2EE_app.models import *
 
+RSA_KEY_SIZE_BITS = 2048
+HASH_SIZE_BYTES = hashlib.sha512.Size
 
 def signup(req):
     return render(req, 'signup.html')
 
 
-def get_pke_key(): # returns: RSA key object -- use .e for public & .d for private
-    return RSA.generate(2048)
-
-
+def get_pke_key():  # returns: RSA key object -- use .e for public & .d for private
+    return RSA.generate(RSA_KEY_SIZE_BITS)
 
 
 def get_argon_key(password, salt, argon_hash_len):
@@ -29,12 +29,9 @@ def get_argon_key(password, salt, argon_hash_len):
         type=argon2.low_level.Type.D
     )
 
+
 def get_uuid(password_argon_hash, username):
     return uuid.UUID(hmac.new(password_argon_hash, username, hashlib.sha256))
-
-
-
-
 
 
 def init_user(username, password):
@@ -42,19 +39,13 @@ def init_user(username, password):
 
     # store username + rsa_public_key in Public_Key DB
     Public_Key(username, rsa_key.publickey().exportKey()).save()
+    user = User()
 
-
-
-
-
-
-
-
-
-
-
-
-
+    user.username = username
+    user.data_db_key = get_argon_key(password, username, len(username))
+    user.enc_key = get_argon_key(f"enc_{password}", username, RSA_KEY_SIZE_BITS // 8)
+    user.hmac_key = get_argon_key(f"hmac_{password}", username, HASH_SIZE_BYTES)
+    user.rsa_private_key = rsa_key.export_key()
 
 
 
@@ -67,4 +58,3 @@ def process_signup(req):
             argon_hash_len = 32
             password_argon_hash = get_argon_key(password, user, argon_hash_len)
             uuid = get_uuid(password_argon_hash, user)
-
