@@ -26,7 +26,7 @@ def get_pke_key():  # returns: RSA key object -- use .e for public & .d for priv
     return RSA.generate(RSA_KEY_SIZE_BITS)
 
 
-def get_argon_key(password, salt, argon_hash_len):
+def get_argon_key(password: str, salt: str, argon_hash_len: int) -> bytes:
     return argon2.low_level.hash_secret(  # return: bytes
         bytes(password, 'ascii'),  # pass
         bytes(salt, 'ascii'),  # salt
@@ -76,7 +76,7 @@ def init_user(username, password):
     user.hmac_key = get_argon_key(f"hmac_{password}", username, HASH_SIZE_BYTES)
     user.rsa_private_key = rsa_key.export_key()
 
-    user_data_to_encrypt = json.dumps(user.__dict__)
+    rg
 
     cipher = AES.new(user.enc_key, AES.MODE_CFB, )
 
