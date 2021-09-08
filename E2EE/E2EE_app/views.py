@@ -1,12 +1,8 @@
-import hashlib
-import hmac
-import uuid
+import hashlib, hmac, uuid, os, json
 from base64 import b64encode, b64decode
 
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
-
-import json
 import argon2
 from Crypto.Util.Padding import pad, unpad
 from cprint import cprint
@@ -44,13 +40,22 @@ def get_uuid(password_argon_hash, username):
 
 def sym_enc(enc_key: bytes, iv: bytes, to_enc_json: json) -> json:
     to_enc_bytes = b64encode(to_enc_json)
-    convert_bytes_to_utf8str = lambda i: b64encode(i).decode('utf-8')
+
     if len(iv) != AES.block_size:
         raise ValueError(f"The Initialization vector must be the same size as AES block size of {AES.block_size}!")
 
     cipher = AES.new(enc_key, AES.MODE_CBC, iv)
     cipher_text = cipher.encrypt(pad(to_enc_bytes, AES.block_size))
-    return json.dumps({'iv': convert_bytes_to_utf8str(cipher.iv), "cipher_text": convert_bytes_to_utf8str(cipher_text)})
+    return json.dumps({'iv': cipher.iv, "cipher_text": cipher_text})
+
+
+
+
+def
+
+
+def get_random_bytes(num_bytes: int) -> bytes:
+    return os.urrandom(num_bytes)
 
 
 def sym_dec(key: bytes, cipher_data: json) -> bytes:
@@ -70,9 +75,6 @@ def init_user(username, password):
     # store username + rsa_public_key in Public_Key DB
     Public_Key(username, rsa_key.publickey().exportKey()).save()
 
-
-
-
     user = User()
     user.username = username
     user.data_db_key = get_argon_key(password, username, len(username))
@@ -80,12 +82,9 @@ def init_user(username, password):
     user.hmac_key = get_argon_key(f"hmac_{password}", username, HASH_SIZE_BYTES)
     user.rsa_private_key = rsa_key.export_key()
 
+    user_class_json = json.dumps(user.__dict__)
+    cipher_json = sym_enc(user.enc_key, get_random_bytes(AES.block_size), user_class_json)
 
-
-    cipher = AES.new(user.enc_key, AES.MODE_CFB, )
-
-    cipher_rsa = PKCS1_OAEP.new(user.enc_key)
-    enc_session_key = cipher_rsa.encrypt(user_data_to_encrypt)
 
 
 def process_signup(req):
