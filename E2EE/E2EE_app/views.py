@@ -2,14 +2,19 @@ import hashlib
 import hmac
 import uuid
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES
+
 import json
 import argon2
+from Crypto.Util.Padding import pad
 from django.shortcuts import render
 
 from E2EE.E2EE_app.models import *
 
 RSA_KEY_SIZE_BITS = 2048
 HASH_SIZE_BYTES = hashlib.sha512.Size
+
+
 
 def signup(req):
     return render(req, 'signup.html')
@@ -35,6 +40,34 @@ def get_uuid(password_argon_hash, username):
     return uuid.UUID(hmac.new(password_argon_hash, username, hashlib.sha256))
 
 
+
+
+def sym_enc(enc_key, iv, to_enc_text):
+    if len(iv) != AES.block_size:
+        raise RuntimeError
+    cipher = AES.new(enc_key, AES.MODE_CBC, iv)
+    return cipher.encrypt(pad(to_enc_text, AES.block_size))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def init_user(username, password):
     rsa_key = RSA.generate(2048)
 
@@ -48,9 +81,14 @@ def init_user(username, password):
     user.hmac_key = get_argon_key(f"hmac_{password}", username, HASH_SIZE_BYTES)
     user.rsa_private_key = rsa_key.export_key()
 
-
     user_data_to_encrypt = json.dumps(user.__dict__)
 
+
+
+    cipher = AES.new(user.enc_key, AES.MODE_CFB, )
+
+    cipher_rsa = PKCS1_OAEP.new(user.enc_key)
+    enc_session_key = cipher_rsa.encrypt(user_data_to_encrypt)
 
 
 def process_signup(req):
