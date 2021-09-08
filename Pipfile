@@ -8,6 +8,7 @@ django = "*"
 argon2-cffi = "*"
 rsa = "*"
 pycryptodome = "*"
+c-print = "*"
 
 [dev-packages]
 

@@ -1,12 +1,15 @@
 import hashlib
 import hmac
 import uuid
+from base64 import b64encode, b64decode
+
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
 
 import json
 import argon2
-from Crypto.Util.Padding import pad
+from Crypto.Util.Padding import pad, unpad
+from cprint import cprint
 from django.shortcuts import render
 
 from E2EE.E2EE_app.models import *
@@ -39,10 +42,25 @@ def get_uuid(password_argon_hash, username):
     return uuid.UUID(hmac.new(password_argon_hash, username, hashlib.sha256))
 
 
-def sym_enc(enc_key, iv, to_enc_text):
+def sym_enc(enc_key: bytes, iv: bytes, to_enc_text: bytes) -> json:
+    convert_bytes_to_utf8str = lambda i: b64encode(i).decode('utf-8')
     if len(iv) != AES.block_size:
         raise ValueError(f"The Initialization vector must be the same size as AES block size of {AES.block_size}!")
-    AES.new(enc_key, AES.MODE_CBC, iv).encrypt(pad(to_enc_text, AES.block_size))
+
+    cipher = AES.new(enc_key, AES.MODE_CBC, iv)
+    cipher_text = cipher.encrypt(pad(to_enc_text, AES.block_size))
+    return json.dumps({'iv': convert_bytes_to_utf8str(cipher.iv), "cipher_text": convert_bytes_to_utf8str(cipher_text)})
+
+
+def sym_dec(key: bytes, cipher_data: json) -> bytes:
+    try:
+        cipher_data_dict = json.loads(cipher_data)
+        iv = b64decode(cipher_data_dict['iv'])
+        cipher_text = b64decode(cipher_data_dict['cipher_text'])
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        return unpad(cipher.decrypt(cipher_text), AES.block_size)
+    except ValueError:
+        cprint('Symmetric Decryption Failed! ', c='rB')
 
 
 def init_user(username, password):
