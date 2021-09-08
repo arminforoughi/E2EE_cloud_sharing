@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import uuid
 from Crypto.PublicKey import RSA
+import json
 import argon2
 from django.shortcuts import render
 
@@ -47,6 +48,8 @@ def init_user(username, password):
     user.hmac_key = get_argon_key(f"hmac_{password}", username, HASH_SIZE_BYTES)
     user.rsa_private_key = rsa_key.export_key()
 
+
+    user_data_to_encrypt = json.dumps(user.__dict__)
 
 
 
