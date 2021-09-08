@@ -28,8 +28,8 @@ def get_pke_key():  # returns: RSA key object -- use .e for public & .d for priv
 
 def get_argon_key(password: str, salt: str, argon_hash_len: int) -> bytes:
     return argon2.low_level.hash_secret(  # return: bytes
-        bytes(password, 'ascii'),  # pass
-        bytes(salt, 'ascii'),  # salt
+        bytes(password, 'ascii'),
+        bytes(salt, 'ascii'),
         time_cost=1,
         memory_cost=64 * 1024,
         parallelism=4,
@@ -42,13 +42,14 @@ def get_uuid(password_argon_hash, username):
     return uuid.UUID(hmac.new(password_argon_hash, username, hashlib.sha256))
 
 
-def sym_enc(enc_key: bytes, iv: bytes, to_enc_text: bytes) -> json:
+def sym_enc(enc_key: bytes, iv: bytes, to_enc_json: json) -> json:
+    to_enc_bytes = b64encode(to_enc_json)
     convert_bytes_to_utf8str = lambda i: b64encode(i).decode('utf-8')
     if len(iv) != AES.block_size:
         raise ValueError(f"The Initialization vector must be the same size as AES block size of {AES.block_size}!")
 
     cipher = AES.new(enc_key, AES.MODE_CBC, iv)
-    cipher_text = cipher.encrypt(pad(to_enc_text, AES.block_size))
+    cipher_text = cipher.encrypt(pad(to_enc_bytes, AES.block_size))
     return json.dumps({'iv': convert_bytes_to_utf8str(cipher.iv), "cipher_text": convert_bytes_to_utf8str(cipher_text)})
 
 
@@ -68,15 +69,18 @@ def init_user(username, password):
 
     # store username + rsa_public_key in Public_Key DB
     Public_Key(username, rsa_key.publickey().exportKey()).save()
-    user = User()
 
+
+
+
+    user = User()
     user.username = username
     user.data_db_key = get_argon_key(password, username, len(username))
     user.enc_key = get_argon_key(f"enc_{password}", username, RSA_KEY_SIZE_BITS // 8)
     user.hmac_key = get_argon_key(f"hmac_{password}", username, HASH_SIZE_BYTES)
     user.rsa_private_key = rsa_key.export_key()
 
-    rg
+
 
     cipher = AES.new(user.enc_key, AES.MODE_CFB, )
 
