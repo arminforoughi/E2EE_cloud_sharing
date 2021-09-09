@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/E2EE.iml" filepath="$PROJECT_DIR$/.idea/E2EE.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/endtoend.iml" filepath="$PROJECT_DIR$/.idea/endtoend.iml" />
     </modules>
   </component>
 </project>
