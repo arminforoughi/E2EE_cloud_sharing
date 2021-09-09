@@ -1,3 +1,4 @@
+import ast
 import hashlib, hmac, uuid, os, json
 # from base64 import b64encode, b64decode
 #
@@ -37,13 +38,14 @@ import hashlib, hmac, uuid, os, json
 #         type=argon2.low_level.Type.D
 #     )
 import json
-from base64 import b64encode
+from base64 import b64encode, b64decode
 
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
+from Crypto.Util.Padding import pad, unpad
+from cprint import cprint
 
 
-def sym_enc(enc_key: bytes, iv: bytes, to_enc_json: json) -> json:
+def sym_enc(enc_key: bytes, iv: bytes, to_enc_json: json) -> dict:
     to_enc_bytes = b64encode(json.dumps(to_enc_json).encode('ascii'))
 
     if len(iv) != AES.block_size:
@@ -51,7 +53,7 @@ def sym_enc(enc_key: bytes, iv: bytes, to_enc_json: json) -> json:
 
     cipher = AES.new(enc_key, AES.MODE_CBC, iv)
     cipher_text = cipher.encrypt(pad(to_enc_bytes, AES.block_size))
-    return {'iv': cipher.iv, "cipher_text": cipher_text}
+    return {'iv': b64encode(cipher.iv), "cipher_text": b64encode(cipher_text)}
 
 #
 # def get_hmac(hmac_key: bytes, data_to_hash: bytes) -> bytes:
@@ -61,17 +63,21 @@ def sym_enc(enc_key: bytes, iv: bytes, to_enc_json: json) -> json:
 def get_random_bytes(num_bytes: int) -> bytes:
     return os.urandom(num_bytes)
 
-#
-# def sym_dec(key: bytes, cipher_data: json) -> bytes:
-#     try:
-#         cipher_data_dict = json.loads(cipher_data)
-#         iv = b64decode(cipher_data_dict['iv'])
-#         cipher_text = b64decode(cipher_data_dict['cipher_text'])
-#         cipher = AES.new(key, AES.MODE_CBC, iv)
-#         return unpad(cipher.decrypt(cipher_text), AES.block_size)
-#     except ValueError:
-#         cprint('Symmetric Decryption Failed! ', c='rB')
-#
+
+def sym_dec(key: bytes, cipher_data: dict) -> bytes:
+    try:
+        cipher_data_dict = cipher_data
+        iv = b64decode(cipher_data_dict['iv'])
+        cipher_text = b64decode(cipher_data_dict['cipher_text'])
+
+
+
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        return json.loads(b64decode((unpad(cipher.decrypt(cipher_text), AES.block_size))).decode('ascii'))
+
+    except ValueError:
+        cprint('Symmetric Decryption Failed! ', c='rB')
+
 #
 # def init_user(username, password):
 #     rsa_key = RSA.generate(2048)
@@ -79,7 +85,7 @@ def get_random_bytes(num_bytes: int) -> bytes:
 #     # store username + rsa_public_key in Public_Key DB
 #     Public_Key(username, rsa_key.publickey().exportKey()).save()
 #
-#     user = User()
+#     user = {}
 #     user.username = username
 #     user.data_db_key = get_argon_key(password, username, len(username))
 #     user.enc_key = get_argon_key(f"enc_{password}", username, RSA_KEY_SIZE_BITS // 8)
