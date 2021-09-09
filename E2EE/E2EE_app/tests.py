@@ -8,13 +8,15 @@ from E2EE.E2EE_app.views import get_random_bytes, sym_enc
 
 
 class TestSym(unittest.TestCase):
+    def setUp(self):
+        self.data = {"name": "ardy", "key": "somekey"}
+        self.key = get_random_bytes(AES.block_size)
+        self.iv = get_random_bytes(AES.block_size)
+        self.output = sym_enc(self.key, self.iv, self.data)
+
 
     def test_sym_enc(self):
-        data = {"name": "ardy", "key": "somekey"}
-        key = get_random_bytes(AES.block_size)
-        iv = get_random_bytes(AES.block_size)
-        output = sym_enc(key, iv, data)
-        self.assertIsInstance(output, dict)
+        self.assertIsInstance(self.output, dict)
 
 
 
