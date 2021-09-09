@@ -78,22 +78,22 @@ def sym_dec(key: bytes, cipher_data: dict) -> bytes:
     except ValueError:
         cprint('Symmetric Decryption Failed! ', c='rB')
 
-#
-# def init_user(username, password):
-#     rsa_key = RSA.generate(2048)
-#
-#     # store username + rsa_public_key in Public_Key DB
-#     Public_Key(username, rsa_key.publickey().exportKey()).save()
-#
-#     user = {}
-#     user.username = username
-#     user.data_db_key = get_argon_key(password, username, len(username))
-#     user.enc_key = get_argon_key(f"enc_{password}", username, RSA_KEY_SIZE_BITS // 8)
-#     user.hmac_key = get_argon_key(f"hmac_{password}", username, HASH_SIZE_BYTES)
-#     user.rsa_private_key = rsa_key.export_key()
-#
-#     user_class_json = json.dumps(user.__dict__)
-#     cipher_json = sym_enc(user.enc_key, get_random_bytes(AES.block_size), user_class_json)
-#     cipher_hmac = get_hmac(user.hmac_key, user_class_json.encode('ascii'))
-#
-#     encrypted_hmac_user_cipher_bytearray = bytearray(cipher_json.encode('ascii')).append(cipher_hmac)
+
+def init_user(username, password):
+    rsa_key = RSA.generate(2048)
+
+    # store username + rsa_public_key in Public_Key DB
+    Public_Key(username, rsa_key.publickey().exportKey()).save()
+
+    user = {}
+    user.username = username
+    user['data_db_key'] = get_argon_key(password, username, len(username))
+    user['enc_key'] = get_argon_key(f"enc_{password}", username, RSA_KEY_SIZE_BITS // 8)
+    user['hmac_key'] = get_argon_key(f"hmac_{password}", username, HASH_SIZE_BYTES)
+    user['rsa_private_key'] = rsa_key.export_key()
+
+    user_class_json = json.dumps(user.__dict__)
+    cipher_json = sym_enc(user.enc_key, get_random_bytes(AES.block_size), user_class_json)
+    cipher_hmac = get_hmac(user.hmac_key, user_class_json.encode('ascii'))
+
+    encrypted_hmac_user_cipher_bytearray = bytearray(cipher_json.encode('ascii')).append(cipher_hmac)
